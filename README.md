@@ -2,7 +2,8 @@
 
 Micro SaaS B2B para que organizaciones gestionen las **inscripciones de sus congresos y eventos corporativos**, con correos de confirmación redactados por IA.
 
-- **App desplegada:** _(pendiente: URL de Vercel)_
+- **App desplegada:** https://eventopro-nine.vercel.app
+- **Repositorio:** https://github.com/JackJoshua10/UpperSAP
 - **Propuesta del producto:** [docs/PROPUESTA.md](docs/PROPUESTA.md)
 - **Uso de IA en el desarrollo:** [docs/USO_IA.md](docs/USO_IA.md)
 

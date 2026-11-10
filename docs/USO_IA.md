@@ -33,6 +33,8 @@
 | Build falló en `/e/[slug]`: `useParams()` fuera de `<Suspense>` | Cambio de Next.js 16: los hooks de URL bloquean el prerender | Se envolvió el componente en `<Suspense>` |
 | Lint `react-hooks/set-state-in-effect` (3 errores) | Regla nueva de React 19 contra `setState` síncrono en efectos | Se movieron las actualizaciones de estado a callbacks async y el estado de carga se derivó en lugar de guardarlo |
 | La IA respondía con la plantilla aunque la API key estaba configurada | El log mostró `404 NOT_FOUND`: el alias `gemini-flash-lite-latest` solo existe en la API `v1beta` y el SDK `@google/genai` v3 usa `v1` | Se listaron los modelos disponibles con la API, se probó cada uno en `v1` y `v1beta` y se fijó `gemini-3.5-flash-lite` (estable y disponible en ambas) |
+| Variables de entorno en Vercel con 3 caracteres extra (`ï»¿https://...`) | Al pasar los valores por tubería, PowerShell 5.1 antepone un BOM UTF-8 | Se detectó comparando con `vercel env pull` y se volvieron a cargar desde Git Bash con `printf '%s'` |
+| `eventopro.vercel.app` mostraba otro sitio | Ese subdominio pertenece a otro usuario de Vercel | Se usó el alias real del proyecto: `eventopro-nine.vercel.app` |
 | `.env.example` quedaba ignorado por git | El `.gitignore` por defecto ignora `.env*` | Se agregó la excepción `!.env.example` |
 
 ## 6. Verificación
