@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import { STATUS_LABEL, TICKET_LABEL, formatDate, type Registration, type EventItem } from "@/lib/types";
 
-// Genera un correo de confirmacion personalizado para una inscripcion.
+// Genera un correo de confirmación personalizado para una inscripción.
 // Corre solo en el servidor: GEMINI_API_KEY nunca llega al navegador.
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");

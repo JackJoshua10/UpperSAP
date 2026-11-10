@@ -48,7 +48,7 @@ for each row execute function public.set_updated_at();
 alter table public.events enable row level security;
 alter table public.registrations enable row level security;
 
--- Eventos: cualquiera puede ver un evento (pagina publica de inscripcion);
+-- Eventos: cualquiera puede ver un evento (página pública de inscripción);
 -- solo el organizador lo crea, edita o elimina.
 create policy "events_public_read" on public.events
   for select to anon, authenticated using (true);
@@ -59,7 +59,7 @@ create policy "events_owner_update" on public.events
 create policy "events_owner_delete" on public.events
   for delete to authenticated using (owner_id = (select auth.uid()));
 
--- Inscripciones: el publico solo puede crear inscripciones pendientes;
+-- Inscripciones: el público solo puede crear inscripciones pendientes;
 -- solo el organizador del evento puede verlas, editarlas o eliminarlas.
 create policy "registrations_public_insert" on public.registrations
   for insert to anon, authenticated

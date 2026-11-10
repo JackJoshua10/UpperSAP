@@ -156,7 +156,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500">
-        EventoPro · MVP construido para el examen práctico de innovación SaaS
+        © 2026 EventoPro · Inscripciones para congresos y eventos corporativos
       </footer>
     </div>
   );

@@ -38,6 +38,23 @@ Navegador (Next.js / React, Tailwind)
 - **Seguridad:** la clave publicable de Supabase es pública por diseño. El aislamiento entre organizaciones lo garantizan las políticas RLS en Postgres, no el frontend. La clave de Gemini nunca se expone al navegador.
 - **Esquema SQL:** [supabase/migrations](supabase/migrations).
 
+## Estructura
+
+```
+src/
+├─ app/
+│  ├─ page.tsx                      Landing del producto
+│  ├─ login/page.tsx                Registro e inicio de sesión (Supabase Auth)
+│  ├─ dashboard/page.tsx            Panel del organizador: eventos, inscripciones, estados, IA
+│  ├─ e/[slug]/page.tsx             Página pública de inscripción de un evento
+│  └─ api/ai/confirmation/route.ts  Generación del correo con Gemini (servidor)
+├─ components/dashboard/            Modal, formularios y tarjetas de métricas del panel
+└─ lib/
+   ├─ supabase.ts                   Cliente de Supabase
+   └─ types.ts                      Tipos del dominio, estados y utilidades
+supabase/migrations/                Esquema SQL y políticas RLS
+```
+
 ## Ejecutar en local
 
 ```bash

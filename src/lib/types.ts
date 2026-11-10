@@ -36,6 +36,8 @@ export const STATUS_LABEL: Record<RegistrationStatus, string> = {
   cancelado: "Cancelado",
 };
 
+export const STATUSES = Object.keys(STATUS_LABEL) as RegistrationStatus[];
+
 export const STATUS_STYLE: Record<RegistrationStatus, string> = {
   pendiente: "bg-amber-100 text-amber-800",
   confirmado: "bg-blue-100 text-blue-800",

@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { EventForm, type EventFormValues } from "@/components/dashboard/EventForm";
+import { Modal } from "@/components/dashboard/Modal";
+import { RegistrationModal, emptyRegistration, type RegistrationForm } from "@/components/dashboard/RegistrationModal";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { supabase } from "@/lib/supabase";
 import {
+  STATUSES,
   STATUS_LABEL,
   STATUS_STYLE,
   TICKET_LABEL,
@@ -14,33 +19,7 @@ import {
   type EventItem,
   type Registration,
   type RegistrationStatus,
-  type TicketType,
 } from "@/lib/types";
-
-const STATUSES = Object.keys(STATUS_LABEL) as RegistrationStatus[];
-
-type RegistrationForm = {
-  id?: string;
-  full_name: string;
-  email: string;
-  company: string;
-  job_title: string;
-  phone: string;
-  ticket_type: TicketType;
-  status: RegistrationStatus;
-  notes: string;
-};
-
-const emptyRegistration: RegistrationForm = {
-  full_name: "",
-  email: "",
-  company: "",
-  job_title: "",
-  phone: "",
-  ticket_type: "general",
-  status: "pendiente",
-  notes: "",
-};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -65,7 +44,7 @@ export default function DashboardPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // --- Sesion ---
+  // --- Sesión ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) router.replace("/login");
@@ -74,7 +53,7 @@ export default function DashboardPage() {
   }, [router]);
 
   // --- Eventos del organizador ---
-  // Filtramos por owner_id porque la lectura de eventos es publica (para la pagina de inscripcion).
+  // Se filtra por owner_id porque la lectura de eventos es pública (la necesita la página de inscripción).
   useEffect(() => {
     if (!user) return;
     supabase
@@ -129,7 +108,7 @@ export default function DashboardPage() {
   }, [registrations]);
 
   // --- Acciones ---
-  async function createEvent(form: { name: string; starts_at: string; venue: string; description: string; capacity: string }) {
+  async function createEvent(form: EventFormValues) {
     const slug = `${slugify(form.name)}-${Math.random().toString(36).slice(2, 6)}`;
     const { data, error } = await supabase
       .from("events")
@@ -169,19 +148,14 @@ export default function DashboardPage() {
       setRegistrations((prev) => prev.map((r) => (r.id === data.id ? data : r)));
       notify("Inscripción actualizada");
     } else {
-      // Alta manual desde el panel: se crea como pendiente (regla RLS) y luego se aplica el estado elegido.
+      // Alta manual: la política registrations_owner_insert permite al organizador elegir el estado inicial.
       const { data, error } = await supabase
         .from("registrations")
-        .insert({ ...payload, status: "pendiente", event_id: selectedId })
+        .insert({ ...payload, event_id: selectedId })
         .select()
         .single();
       if (error) return notify(friendlyError(error.code, error.message));
-      let created = data as Registration;
-      if (form.status !== "pendiente") {
-        const res = await supabase.from("registrations").update({ status: form.status }).eq("id", created.id).select().single();
-        if (res.data) created = res.data;
-      }
-      setRegistrations((prev) => [created, ...prev]);
+      setRegistrations((prev) => [data, ...prev]);
       notify("Inscripción registrada");
     }
     setEditing(null);
@@ -305,11 +279,11 @@ export default function DashboardPage() {
 
             {/* Metricas */}
             <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-              <Stat label="Total" value={stats.total} sub={selectedEvent.capacity ? `de ${selectedEvent.capacity}` : undefined} />
-              <Stat label="Pendientes" value={stats.pendiente} />
-              <Stat label="Confirmados" value={stats.confirmado} />
-              <Stat label="Asistieron" value={stats.asistio} />
-              <Stat label="Cancelados" value={stats.cancelado} />
+              <StatCard label="Total" value={stats.total} sub={selectedEvent.capacity ? `de ${selectedEvent.capacity}` : undefined} />
+              <StatCard label="Pendientes" value={stats.pendiente} />
+              <StatCard label="Confirmados" value={stats.confirmado} />
+              <StatCard label="Asistieron" value={stats.asistio} />
+              <StatCard label="Cancelados" value={stats.cancelado} />
             </section>
 
             {/* Filtros */}
@@ -478,176 +452,3 @@ function friendlyError(code: string | undefined, message: string) {
   return `Error: ${message}`;
 }
 
-function Stat({ label, value, sub }: { label: string; value: number; sub?: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold">
-        {value} {sub && <span className="text-sm font-normal text-slate-500">{sub}</span>}
-      </p>
-    </div>
-  );
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 className="text-lg font-bold">{title}</h2>
-          <button className="text-slate-400 hover:text-slate-700" onClick={onClose} aria-label="Cerrar">
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function RegistrationModal({
-  initial,
-  onCancel,
-  onSave,
-}: {
-  initial: RegistrationForm;
-  onCancel: () => void;
-  onSave: (form: RegistrationForm) => Promise<void>;
-}) {
-  const [form, setForm] = useState(initial);
-  const [saving, setSaving] = useState(false);
-  const set = (field: keyof RegistrationForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm({ ...form, [field]: e.target.value });
-
-  return (
-    <Modal title={initial.id ? "Editar inscripción" : "Registrar asistente"} onClose={onCancel}>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setSaving(true);
-          await onSave(form);
-          setSaving(false);
-        }}
-        className="grid gap-3 sm:grid-cols-2"
-      >
-        <label className="block text-sm font-medium sm:col-span-2">
-          Nombre completo *
-          <input required minLength={2} className="input mt-1" value={form.full_name} onChange={set("full_name")} />
-        </label>
-        <label className="block text-sm font-medium">
-          Correo *
-          <input type="email" required className="input mt-1" value={form.email} onChange={set("email")} />
-        </label>
-        <label className="block text-sm font-medium">
-          Teléfono
-          <input className="input mt-1" value={form.phone} onChange={set("phone")} />
-        </label>
-        <label className="block text-sm font-medium">
-          Empresa
-          <input className="input mt-1" value={form.company} onChange={set("company")} />
-        </label>
-        <label className="block text-sm font-medium">
-          Cargo
-          <input className="input mt-1" value={form.job_title} onChange={set("job_title")} />
-        </label>
-        <label className="block text-sm font-medium">
-          Entrada
-          <select className="input mt-1" value={form.ticket_type} onChange={set("ticket_type")}>
-            {(Object.keys(TICKET_LABEL) as TicketType[]).map((t) => (
-              <option key={t} value={t}>
-                {TICKET_LABEL[t]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm font-medium">
-          Estado
-          <select className="input mt-1" value={form.status} onChange={set("status")}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm font-medium sm:col-span-2">
-          Notas internas
-          <textarea rows={2} className="input mt-1" value={form.notes} onChange={set("notes")} />
-        </label>
-        <div className="mt-2 flex justify-end gap-2 sm:col-span-2">
-          <button type="button" className="btn-secondary" onClick={onCancel}>
-            Cancelar
-          </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-function EventForm({
-  onSubmit,
-  isFirst,
-}: {
-  onSubmit: (form: { name: string; starts_at: string; venue: string; description: string; capacity: string }) => Promise<void>;
-  isFirst: boolean;
-}) {
-  const [form, setForm] = useState({ name: "", starts_at: "", venue: "", description: "", capacity: "" });
-  const [saving, setSaving] = useState(false);
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        await onSubmit(form);
-        setSaving(false);
-      }}
-      className="mt-4 grid gap-3 rounded-xl border border-violet-200 bg-violet-50/50 p-4 sm:grid-cols-2"
-    >
-      <p className="font-semibold sm:col-span-2">
-        {isFirst ? "Crea tu primer evento para empezar a recibir inscripciones" : "Nuevo evento"}
-      </p>
-      <label className="block text-sm font-medium sm:col-span-2">
-        Nombre del evento *
-        <input
-          required
-          minLength={3}
-          maxLength={120}
-          className="input mt-1"
-          placeholder="Ej. Congreso de Innovación Empresarial 2026"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-      </label>
-      <label className="block text-sm font-medium">
-        Fecha
-        <input type="date" className="input mt-1" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} />
-      </label>
-      <label className="block text-sm font-medium">
-        Aforo
-        <input type="number" min={1} className="input mt-1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
-      </label>
-      <label className="block text-sm font-medium sm:col-span-2">
-        Lugar
-        <input className="input mt-1" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
-      </label>
-      <label className="block text-sm font-medium sm:col-span-2">
-        Descripción
-        <textarea rows={2} className="input mt-1" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-      </label>
-      <div className="sm:col-span-2">
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? "Creando..." : "Crear evento"}
-        </button>
-      </div>
-    </form>
-  );
-}
